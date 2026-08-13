@@ -25,6 +25,18 @@ const getGroupColor = (group, allGroups) => {
   return GROUP_PALETTE[(idx >= 0 ? idx : allGroups.length) % GROUP_PALETTE.length];
 };
 
+// Storage shim: works in Claude.ai artifacts (window.storage) AND real browsers (localStorage)
+const storage = {
+  get: (key) => {
+    if (window.storage) return window.storage.get(key);
+    try { return { value: localStorage.getItem(key) }; } catch (e) { return { value: null }; }
+  },
+  set: (key, value) => {
+    if (window.storage) return window.storage.set(key, value);
+    try { localStorage.setItem(key, value); } catch (e) {}
+  },
+};
+
 const getStatusColor = (status) => {
   const map = {
     'On Track': 'bg-blue-100 text-blue-800',
@@ -784,11 +796,11 @@ const GoalsTracker = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const r3 = await window.storage?.get('goals_tracker_data_v3');
+        const r3 = await storage.get('goals_tracker_data_v3');
         if (r3?.value) { setGoals(JSON.parse(r3.value)); return; }
 
         // Migrate from v2
-        const r2 = await window.storage?.get('goals_tracker_data_v2');
+        const r2 = await storage.get('goals_tracker_data_v2');
         if (r2?.value) {
           const v2 = JSON.parse(r2.value);
           const migratedQ2 = v2.map(g => ({
@@ -816,37 +828,37 @@ const GoalsTracker = () => {
     };
     load();
 
-    const loadDark = async () => { try { const r = await window.storage?.get('goals_tracker_dark_mode'); if (r?.value) setDarkMode(JSON.parse(r.value)); } catch (e) {} };
-    const loadCats = async () => { try { const r = await window.storage?.get('goals_tracker_custom_categories'); if (r?.value) setCustomCategories(JSON.parse(r.value)); } catch (e) {} };
-    const loadOrder = async () => { try { const r = await window.storage?.get('goals_tracker_group_order'); if (r?.value) setGroupOrder(JSON.parse(r.value)); } catch (e) {} };
+    const loadDark = async () => { try { const r = await storage.get('goals_tracker_dark_mode'); if (r?.value) setDarkMode(JSON.parse(r.value)); } catch (e) {} };
+    const loadCats = async () => { try { const r = await storage.get('goals_tracker_custom_categories'); if (r?.value) setCustomCategories(JSON.parse(r.value)); } catch (e) {} };
+    const loadOrder = async () => { try { const r = await storage.get('goals_tracker_group_order'); if (r?.value) setGroupOrder(JSON.parse(r.value)); } catch (e) {} };
     loadDark();
     loadCats();
     loadOrder();
   }, []);
 
   useEffect(() => {
-    const save = async () => { try { if (goals.length > 0) await window.storage?.set('goals_tracker_data_v3', JSON.stringify(goals)); } catch (e) {} };
+    const save = async () => { try { if (goals.length > 0) await storage.set('goals_tracker_data_v3', JSON.stringify(goals)); } catch (e) {} };
     save();
   }, [goals]);
 
   useEffect(() => {
-    const save = async () => { try { await window.storage?.set('goals_tracker_dark_mode', JSON.stringify(darkMode)); } catch (e) {} };
+    const save = async () => { try { await storage.set('goals_tracker_dark_mode', JSON.stringify(darkMode)); } catch (e) {} };
     save();
   }, [darkMode]);
 
   useEffect(() => {
-    const save = async () => { try { await window.storage?.set('goals_tracker_custom_categories', JSON.stringify(customCategories)); } catch (e) {} };
+    const save = async () => { try { await storage.set('goals_tracker_custom_categories', JSON.stringify(customCategories)); } catch (e) {} };
     save();
   }, [customCategories]);
 
   useEffect(() => {
-    const save = async () => { try { if (groupOrder.length > 0) await window.storage?.set('goals_tracker_group_order', JSON.stringify(groupOrder)); } catch (e) {} };
+    const save = async () => { try { if (groupOrder.length > 0) await storage.set('goals_tracker_group_order', JSON.stringify(groupOrder)); } catch (e) {} };
     save();
   }, [groupOrder]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    try { const r = await window.storage?.get('goals_tracker_data_v3'); if (r?.value) setGoals(JSON.parse(r.value)); } catch (e) {}
+    try { const r = await storage.get('goals_tracker_data_v3'); if (r?.value) setGoals(JSON.parse(r.value)); } catch (e) {}
     setTimeout(() => setRefreshing(false), 500);
   };
 
