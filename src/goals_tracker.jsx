@@ -25,15 +25,23 @@ const getGroupColor = (group, allGroups) => {
   return GROUP_PALETTE[(idx >= 0 ? idx : allGroups.length) % GROUP_PALETTE.length];
 };
 
-// Storage shim: works in Claude.ai artifacts (window.storage) AND real browsers (localStorage)
+// Storage shim: reads/writes to shared Airtable database via serverless API
 const storage = {
-  get: (key) => {
-    if (window.storage) return window.storage.get(key);
-    try { return { value: localStorage.getItem(key) }; } catch (e) { return { value: null }; }
+  get: async (key) => {
+    try {
+      const res = await fetch(`/api/data?key=${encodeURIComponent(key)}`);
+      const json = await res.json();
+      return { value: json.value };
+    } catch (e) { return { value: null }; }
   },
-  set: (key, value) => {
-    if (window.storage) return window.storage.set(key, value);
-    try { localStorage.setItem(key, value); } catch (e) {}
+  set: async (key, value) => {
+    try {
+      await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, value })
+      });
+    } catch (e) {}
   },
 };
 
