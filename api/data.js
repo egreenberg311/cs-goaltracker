@@ -5,6 +5,17 @@ export default async function handler(req, res) {
   const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE}`;
   const HEADERS = { Authorization: `Bearer ${API_KEY}` };
 
+  // Debug endpoint — remove once working
+  if (req.query.debug === 'true') {
+    return res.json({
+      hasApiKey: !!API_KEY,
+      apiKeyPrefix: API_KEY ? API_KEY.substring(0, 15) + '...' : 'NOT SET',
+      baseId: BASE_ID || 'NOT SET',
+      table: TABLE,
+      fullUrl: BASE_URL.replace(API_KEY, '[REDACTED]')
+    });
+  }
+
   if (req.method === 'GET') {
     const { key } = req.query;
     const response = await fetch(`${BASE_URL}?filterByFormula=({Key}="${key}")`, { headers: HEADERS });
@@ -17,7 +28,6 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     const { key, value } = req.body;
 
-    // Find existing record for this key
     const findRes = await fetch(`${BASE_URL}?filterByFormula=({Key}="${key}")`, { headers: HEADERS });
     const findData = await findRes.json();
     if (findData.error) return res.status(400).json({ error: findData.error, step: 'find' });
