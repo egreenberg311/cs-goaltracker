@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
   const API_KEY = process.env.AIRTABLE_API_KEY;
   const BASE_ID = process.env.AIRTABLE_BASE_ID;
-  const TABLE = encodeURIComponent("Goals Tracker");
+  const TABLE = encodeURIComponent("Table 1");
   const BASE_URL = `https://api.airtable.com/v0/${BASE_ID}/${TABLE}`;
   const HEADERS = { Authorization: `Bearer ${API_KEY}` };
 
