@@ -7,9 +7,9 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const { key } = req.query;
-    const url = `${BASE_URL}?filterByFormula=({Key}="${key}")`;
-    const response = await fetch(url, { headers: HEADERS });
+    const response = await fetch(`${BASE_URL}?filterByFormula=({Key}="${key}")`, { headers: HEADERS });
     const data = await response.json();
+    if (data.error) return res.status(400).json({ error: data.error });
     const value = data.records?.[0]?.fields?.Value || null;
     return res.json({ value });
   }
@@ -18,29 +18,30 @@ export default async function handler(req, res) {
     const { key, value } = req.body;
 
     // Find existing record for this key
-    const findRes = await fetch(
-      `${BASE_URL}?filterByFormula=({Key}="${key}")`,
-      { headers: HEADERS }
-    );
+    const findRes = await fetch(`${BASE_URL}?filterByFormula=({Key}="${key}")`, { headers: HEADERS });
     const findData = await findRes.json();
+    if (findData.error) return res.status(400).json({ error: findData.error, step: 'find' });
+
     const existing = findData.records?.[0];
+    let writeRes;
 
     if (existing) {
-      // Update existing record
-      await fetch(`${BASE_URL}/${existing.id}`, {
+      const r = await fetch(`${BASE_URL}/${existing.id}`, {
         method: 'PATCH',
         headers: { ...HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: { Value: value } })
       });
+      writeRes = await r.json();
     } else {
-      // Create new record
-      await fetch(BASE_URL, {
+      const r = await fetch(BASE_URL, {
         method: 'POST',
         headers: { ...HEADERS, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fields: { Key: key, Value: value } })
       });
+      writeRes = await r.json();
     }
 
+    if (writeRes.error) return res.status(400).json({ success: false, error: writeRes.error, step: 'write' });
     return res.json({ success: true });
   }
 
